@@ -1,0 +1,11 @@
+services:
+  goutils-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    stdin_open: true
+    tty: true
+    init: true
+    volumes:
+      - ./:/workspace
+    entrypoint: fish
