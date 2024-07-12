@@ -12,7 +12,9 @@ import (
 var Logger = log.With().Str("module", "goutils").Logger()
 
 func InitZeroLog() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"})
+	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"})
+	log.Logger = logger
+	Logger = logger
 }
 
 func CMD(cwd string, command string, args ...string) error {

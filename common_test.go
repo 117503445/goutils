@@ -8,6 +8,8 @@ import (
 ) 
 
 func TestCMD(t *testing.T) {
+	goutils.InitZeroLog()
+
 	ast := assert.New(t)
 	err := goutils.CMD("", "ls")
 	ast.NoError(err)

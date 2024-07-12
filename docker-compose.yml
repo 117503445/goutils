@@ -8,4 +8,4 @@ services:
     init: true
     volumes:
       - ./:/workspace
-    entrypoint: fish
+      - ~/.vscode-server/bin:/root/.vscode-server/bin
