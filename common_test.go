@@ -13,4 +13,10 @@ func TestCMD(t *testing.T) {
 	ast := assert.New(t)
 	err := goutils.CMD("", "ls")
 	ast.NoError(err)
+
+	err = goutils.CMD("", "ls", "&&", "ls")
+	ast.Error(err)
+
+	err = goutils.CMD("", "ls", "&& echo 2")
+	ast.Error(err)
 }
