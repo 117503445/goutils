@@ -4,18 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
-
-var Logger = log.With().Str("module", "goutils").Logger()
-
-func InitZeroLog() {
-	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"})
-	log.Logger = logger
-	Logger = logger
-}
 
 func CMD(cwd string, command string, args ...string) error {
 	var err error
