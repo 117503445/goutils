@@ -13,9 +13,10 @@ import (
 	"github.com/knadh/koanf/providers/posflag"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
-	"github.com/rs/zerolog/log"
 	flag "github.com/spf13/pflag"
 )
+
+var ConfigLogger = Logger.With().Str("module", "goutils.config").Logger()
 
 const DEFAULT_CONFIG = "config.toml"
 
@@ -27,7 +28,7 @@ func pathIsFile(path string) bool {
 	}
 
 	if fileInfo.IsDir() {
-		log.Warn().Str("path", path).Msg("is a directory")
+		ConfigLogger.Warn().Str("path", path).Msg("is a directory")
 		return false
 	}
 
@@ -54,11 +55,11 @@ func loadConfig(config interface{}, systemArgs []string) {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	} else {
-		log.Fatal().Msg("config must be a pointer")
+		ConfigLogger.Fatal().Msg("config must be a pointer")
 	}
 
 	t := v.Type()
-	log.Debug().Str("configType", t.String()).Msg("configType")
+	ConfigLogger.Debug().Str("configType", t.String()).Msg("configType")
 
 	envToKey := make(map[string]string)
 	envToKey["CONFIG"] = "config"
@@ -66,13 +67,13 @@ func loadConfig(config interface{}, systemArgs []string) {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
-		log.Debug().Str("field", field.Name).Str("type", field.Type.String()).Msg("field")
+		ConfigLogger.Debug().Str("field", field.Name).Str("type", field.Type.String()).Msg("field")
 
 		koanfTag := field.Tag.Get("koanf")
 		if koanfTag == "" {
-			log.Fatal().Str("field", field.Name).Msg("missing koanf tag")
+			ConfigLogger.Fatal().Str("field", field.Name).Msg("missing koanf tag")
 		} else if koanfTag == "config" {
-			log.Fatal().Str("field", field.Name).Msg("koanf tag can not be 'config'")
+			ConfigLogger.Fatal().Str("field", field.Name).Msg("koanf tag can not be 'config'")
 		}
 		envToKey[strings.ToUpper(field.Name)] = koanfTag
 
@@ -86,7 +87,7 @@ func loadConfig(config interface{}, systemArgs []string) {
 		case reflect.Float64, reflect.Float32:
 			f.Float64(field.Tag.Get("koanf"), value.Float(), field.Tag.Get("usage"))
 		default:
-			log.Fatal().Str("field", field.Name).Str("type", field.Type.String()).Msg("unsupported type")
+			ConfigLogger.Fatal().Str("field", field.Name).Str("type", field.Type.String()).Msg("unsupported type")
 		}
 	}
 
@@ -94,9 +95,9 @@ func loadConfig(config interface{}, systemArgs []string) {
 	var k = koanf.New(".")
 
 	if err := k.Load(structs.Provider(config, "koanf"), nil); err != nil {
-		log.Fatal().Err(err).Msg("error loading default config")
+		ConfigLogger.Fatal().Err(err).Msg("error loading default config")
 	} else {
-		log.Debug().Interface("config", k.All()).Msg("loading default config")
+		ConfigLogger.Debug().Interface("config", k.All()).Msg("loading default config")
 	}
 
 	// Load environment variables.
@@ -107,9 +108,9 @@ func loadConfig(config interface{}, systemArgs []string) {
 			return ""
 		}
 	}), nil); err != nil {
-		log.Fatal().Err(err).Msg("error loading env vars")
+		ConfigLogger.Fatal().Err(err).Msg("error loading env vars")
 	} else {
-		log.Debug().Interface("config", k.All()).Msg("loading env vars")
+		ConfigLogger.Debug().Interface("config", k.All()).Msg("loading env vars")
 	}
 
 	f.Parse(systemArgs)
@@ -117,7 +118,7 @@ func loadConfig(config interface{}, systemArgs []string) {
 	// Load the config files provided in the commandline.
 	cFiles, err := f.GetStringSlice("config")
 	if err != nil {
-		log.Fatal().Err(err).Msg("error getting config files")
+		ConfigLogger.Fatal().Err(err).Msg("error getting config files")
 	}
 
 	cFilesWithCli := false
@@ -130,9 +131,9 @@ func loadConfig(config interface{}, systemArgs []string) {
 	if !cFilesWithCli {
 		if k.Get("config") != nil {
 			cFiles = strings.Split(k.String("config"), ",")
-			log.Debug().Strs("config", cFiles).Msg("config files from env")
+			ConfigLogger.Debug().Strs("config", cFiles).Msg("config files from env")
 		} else {
-			log.Debug().Strs("config", cFiles).Msg("config files from default")
+			ConfigLogger.Debug().Strs("config", cFiles).Msg("config files from default")
 		}
 	}
 
@@ -143,7 +144,7 @@ func loadConfig(config interface{}, systemArgs []string) {
 					c = path.Join(workingDirectory, c)
 				}
 			} else {
-				log.Warn().Err(err).Str("path", c).Msg("error getting working directory")
+				ConfigLogger.Warn().Err(err).Str("path", c).Msg("error getting working directory")
 			}
 
 			if executablePath, err := os.Executable(); err == nil {
@@ -151,23 +152,23 @@ func loadConfig(config interface{}, systemArgs []string) {
 					c = path.Join(path.Dir(executablePath), c)
 				}
 			} else {
-				log.Warn().Err(err).Str("path", c).Msg("error getting executable path")
+				ConfigLogger.Warn().Err(err).Str("path", c).Msg("error getting executable path")
 			}
 		}
 
 		if !pathIsFile(c) {
 			if c == DEFAULT_CONFIG {
-				log.Info().Str("file", c).Msg("config file not found")
+				ConfigLogger.Info().Str("file", c).Msg("config file not found")
 			} else {
-				log.Warn().Str("file", c).Msg("config file not found")
+				ConfigLogger.Warn().Str("file", c).Msg("config file not found")
 			}
 			continue
 		}
 
 		if err := k.Load(file.Provider(c), toml.Parser()); err != nil {
-			log.Fatal().Err(err).Str("file", c).Msg("error loading file")
+			ConfigLogger.Fatal().Err(err).Str("file", c).Msg("error loading file")
 		} else {
-			log.Debug().Str("file", c).Interface("config", k.All()).Msg("loading config file")
+			ConfigLogger.Debug().Str("file", c).Interface("config", k.All()).Msg("loading config file")
 		}
 	}
 
@@ -178,11 +179,11 @@ func loadConfig(config interface{}, systemArgs []string) {
 	// line flag values that are not present in conf maps from previously loaded
 	// providers.
 	if err := k.Load(posflag.Provider(f, ".", k), nil); err != nil {
-		log.Fatal().Err(err).Msg("error loading config from cli")
+		ConfigLogger.Fatal().Err(err).Msg("error loading config from cli")
 	}
 
 	// Unmarshal the loaded config into the conf struct.
 	if err := k.Unmarshal("", config); err != nil {
-		log.Fatal().Err(err).Msg("error unmarshaling config")
+		ConfigLogger.Fatal().Err(err).Msg("error unmarshaling config")
 	}
 }
