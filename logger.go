@@ -12,7 +12,7 @@ var Logger = log.With().Str("module", "goutils").Logger()
 func InitZeroLog() {
 	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"}).Level(zerolog.InfoLevel)
 
-	ConfigLogger.Level(zerolog.WarnLevel)
+	ConfigLogger = ConfigLogger.Level(zerolog.WarnLevel)
 
 	log.Logger = logger
 }
