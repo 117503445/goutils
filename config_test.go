@@ -15,6 +15,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	var config *Config
 	var err error
+	var result *ConfigResult
 	ast := assert.New(t)
 
 	// default
@@ -22,7 +23,8 @@ func TestLoadConfig(t *testing.T) {
 		Name: "default-name",
 		Age:  18,
 	}
-	loadConfig(config, []string{})
+	result = loadConfig(config, []string{})
+	result.Dump()
 	log.Info().Interface("config", config).Msg("config loaded")
 	ast.Equal("default-name", config.Name)
 

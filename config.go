@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -35,13 +36,30 @@ func pathIsFile(path string) bool {
 	return true
 }
 
+type ConfigResult struct {
+	K           *koanf.Koanf
+	ConfigFiles []string
+}
+
+func (c *ConfigResult) Dump() {
+	js, err := json.Marshal(map[string]interface{}{
+		"configFiles": c.ConfigFiles,
+		"K":           c.K.All(),
+	})
+	if err != nil {
+		ConfigLogger.Warn().Err(err).Msg("error marshaling config result")
+	}
+
+	println(string(js))
+}
+
 // LoadConfig loads the config from the default config file, env vars, and command line flags. config must be a pointer to a struct. Fields in the struct must be tagged with `koanf:"key"` and `usage:"description"` tags.
-func LoadConfig(config interface{}) {
-	loadConfig(config, os.Args[1:])
+func LoadConfig(config interface{}) *ConfigResult {
+	return loadConfig(config, os.Args[1:])
 }
 
 // loadConfig makes it easier to test LoadConfig by allowing the systemArgs to be passed in.
-func loadConfig(config interface{}, systemArgs []string) {
+func loadConfig(config interface{}, systemArgs []string) *ConfigResult {
 	// Use the POSIX compliant pflag lib instead of Go's flag lib.
 	f := flag.NewFlagSet("config", flag.ContinueOnError)
 	f.Usage = func() {
@@ -186,4 +204,6 @@ func loadConfig(config interface{}, systemArgs []string) {
 	if err := k.Unmarshal("", config); err != nil {
 		ConfigLogger.Fatal().Err(err).Msg("error unmarshaling config")
 	}
+
+	return &ConfigResult{K: k, ConfigFiles: cFiles}
 }
