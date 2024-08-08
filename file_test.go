@@ -26,3 +26,21 @@ func TestWriteJSON(t *testing.T) {
 	err := goutils.WriteJSON(filename, data)
 	ast.NoError(err)
 }
+
+func TestReadJSON(t *testing.T) {
+	ast := assert.New(t)
+
+	filename := "test.json"
+	var data map[string]interface{}
+	err := goutils.ReadJSON(filename, &data)
+	ast.NoError(err)
+	ast.Equal("value", data["key"])
+
+	type Test struct {
+		Key string `json:"key"`
+	}
+	var test Test
+	err = goutils.ReadJSON(filename, &test)
+	ast.NoError(err)
+	ast.Equal("value", test.Key)
+}

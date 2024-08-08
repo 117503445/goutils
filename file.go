@@ -48,3 +48,14 @@ func WriteJSON(filename string, data interface{}) error {
 	_, err = file.Write(jsonData)
 	return err
 }
+
+// ReadJSON with generic type
+func ReadJSON[T any](filename string, data *T) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return json.NewDecoder(file).Decode(data)
+}
