@@ -94,6 +94,7 @@ func loadConfig(config interface{}, systemArgs []string) *ConfigResult {
 			ConfigLogger.Fatal().Str("field", field.Name).Msg("koanf tag can not be 'config'")
 		}
 		envToKey[strings.ToUpper(field.Name)] = koanfTag
+		envToKey[field.Name] = koanfTag
 
 		switch field.Type.Kind() {
 		case reflect.String:
