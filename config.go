@@ -95,6 +95,7 @@ func loadConfig(config interface{}, systemArgs []string) *ConfigResult {
 		}
 		envToKey[strings.ToUpper(field.Name)] = koanfTag
 		envToKey[field.Name] = koanfTag
+		envToKey[koanfTag] = koanfTag
 
 		switch field.Type.Kind() {
 		case reflect.String:
