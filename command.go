@@ -46,7 +46,7 @@ type execOptions struct {
 
 // ExecOpt is the default options for Exec
 var ExecOpt = &execOptions{
-	Cwd:      "",
+	Cwd: "",
 }
 
 type execOption interface {
@@ -119,24 +119,24 @@ func (w *resultWriter) Write(p []byte) (n int, err error) {
 // - opts: options to customize the behavior of the command
 //
 // Returns:
-// - *ExecResult: the result of the command
+// - *ExecResult: the result of the command. Always not nil. Even if the command fails, the result may contain some output.
 // - error: if the command fails
 func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
+	r := &ExecResult{}
+
 	opt := ExecOpt
 	for _, o := range opts {
 		err := o.applyTo(opt)
 		if err != nil {
-			return nil, err
+			return r, err
 		}
 	}
 
 	strs := strings.Split(cmd, " ")
 	if len(strs) == 0 {
-		return nil, fmt.Errorf("empty command")
+		return r, fmt.Errorf("empty command")
 	}
 	name := strs[0]
-
-	r := &ExecResult{}
 
 	command := exec.Command(name, strs[1:]...)
 	command.Dir = opt.Cwd
@@ -146,7 +146,7 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 	CommandLogger.Debug().Str("cwd", opt.Cwd).Str("command", cmd).Msg("Run Command")
 	err := command.Run()
 	if err != nil {
-		return nil, err
+		return r, err
 	}
 	return r, nil
 }
