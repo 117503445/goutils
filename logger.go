@@ -40,4 +40,6 @@ func InitZeroLog(options ...logOption) {
 	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor}).Level(zerolog.DebugLevel)
 
 	log.Logger = logger
+	Logger = logger.With().Str("module", "goutils").Logger()
+	CommandLogger = logger.With().Str("module", "goutils.command").Logger()
 }
