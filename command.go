@@ -39,23 +39,44 @@ func CMD(cwd string, command string, args ...string) error {
 	return nil
 }
 
-type execOptions struct {
+type ExecOptions struct {
 	// Cwd is the working directory of the command. If empty, the current working directory is used.
 	Cwd string
+
+	PreExecHandler  func(*ExecOptions)
+	ExecutedHandler func(*ExecOptions, *ExecResult, error)
+}
+
+// preExecHandlerLog is the default pre-execution handler
+var preExecHandlerLog = func(o *ExecOptions) {
+	CommandLogger.Debug().Str("cwd", o.Cwd).Msg("Run Command")
+}
+
+var executedHandlerErrorLog = func(o *ExecOptions, r *ExecResult, err error) {
+	if err != nil {
+		CommandLogger.Error().Err(err).Str("cwd", o.Cwd).Str("command", r.Output).Msg("Failed to run command")
+	}
+}
+var executedHandlerFatalLog = func(o *ExecOptions, r *ExecResult, err error) {
+	if err != nil {
+		CommandLogger.Fatal().Err(err).Str("cwd", o.Cwd).Str("command", r.Output).Msg("Failed to run command")
+	}
 }
 
 // ExecOpt is the default options for Exec
-var ExecOpt = &execOptions{
-	Cwd: "",
+var ExecOpt = &ExecOptions{
+	Cwd:             "",
+	PreExecHandler:  preExecHandlerLog,
+	ExecutedHandler: executedHandlerFatalLog,
 }
 
 type execOption interface {
-	applyTo(*execOptions) error
+	applyTo(*ExecOptions) error
 }
 
 type WithCwd string
 
-func (w WithCwd) applyTo(o *execOptions) error {
+func (w WithCwd) applyTo(o *ExecOptions) error {
 	o.Cwd = string(w)
 	return nil
 }
@@ -63,7 +84,7 @@ func (w WithCwd) applyTo(o *execOptions) error {
 type WithWorkDirCmd struct {
 }
 
-func (w WithWorkDirCmd) applyTo(o *execOptions) error {
+func (w WithWorkDirCmd) applyTo(o *ExecOptions) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -72,11 +93,51 @@ func (w WithWorkDirCmd) applyTo(o *execOptions) error {
 	return nil
 }
 
+type WithPreExecLog struct {
+}
+
+func (w WithPreExecLog) applyTo(o *ExecOptions) error {
+	o.PreExecHandler = preExecHandlerLog
+	return nil
+}
+
+type WithPreExecSlient struct {
+}
+
+func (w WithPreExecSlient) applyTo(o *ExecOptions) error {
+	o.PreExecHandler = func(o *ExecOptions) {}
+	return nil
+}
+
+type WithExecutedHandlerErrorLog struct {
+}
+
+func (w WithExecutedHandlerErrorLog) applyTo(o *ExecOptions) error {
+	o.ExecutedHandler = executedHandlerErrorLog
+	return nil
+}
+
+type WithExecutedHandlerFatalLog struct {
+}
+
+func (w WithExecutedHandlerFatalLog) applyTo(o *ExecOptions) error {
+	o.ExecutedHandler = executedHandlerFatalLog
+	return nil
+}
+
+type WithExecutedHandlerSlient struct {
+}
+
+func (w WithExecutedHandlerSlient) applyTo(o *ExecOptions) error {
+	o.ExecutedHandler = func(o *ExecOptions, r *ExecResult, err error) {}
+	return nil
+}
+
 // WithExeParentDir is a option to set the working directory to the parent directory of the executable
 type WithExeParentDir struct {
 }
 
-func (w WithExeParentDir) applyTo(o *execOptions) error {
+func (w WithExeParentDir) applyTo(o *ExecOptions) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return err
@@ -143,10 +204,14 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 	command.Stdout = &resultWriter{isStdout: true, result: r}
 	command.Stderr = &resultWriter{isStderr: true, result: r}
 
-	CommandLogger.Debug().Str("cwd", opt.Cwd).Str("command", cmd).Msg("Run Command")
-	err := command.Run()
-	if err != nil {
-		return r, err
+	if opt.PreExecHandler != nil {
+		opt.PreExecHandler(opt)
 	}
-	return r, nil
+
+	err := command.Run()
+	if opt.ExecutedHandler != nil {
+		opt.ExecutedHandler(opt, r, err)
+	}
+	
+	return r, err
 }
