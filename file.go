@@ -8,6 +8,7 @@ import (
 )
 
 // GetGitRootDir returns the root directory of the git repository
+// Deprecated: Use FindGitRepoRoot instead
 func GetGitRootDir() (string, error) {
 	// from execute binary file path
 	f := os.Args[0]
