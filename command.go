@@ -239,23 +239,23 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 	err := command.Run()
 
 	if opt.DumpOutput {
+		f, err := os.CreateTemp("", "*.output.txt")
+		defer f.Close()
+		if err != nil {
+			log.Error().Err(err).Msg("create temp file failed")
+		}
+		_, err = f.WriteString(r.Output)
+		if err != nil {
+			log.Error().Err(err).Msg("write temp file failed")
+		} else {
+			log.Debug().Str("file", f.Name()).Msg("output dumped to file")
+		}
+
 		lines := strings.Split(r.Output, "\n")
 		const N = 5
 		if len(lines) <= 2*N {
 			println(r.Output)
 		} else {
-			f, err := os.CreateTemp("", "*.output.txt")
-			defer f.Close()
-			if err != nil {
-				log.Error().Err(err).Msg("create temp file failed")
-			}
-			_, err = f.WriteString(r.Output)
-			if err != nil {
-				log.Error().Err(err).Msg("write temp file failed")
-			} else {
-				log.Debug().Str("file", f.Name()).Msg("output dumped to file")
-			}
-
 			for i := 0; i < N; i++ {
 				println(lines[i])
 			}
