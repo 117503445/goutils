@@ -26,7 +26,7 @@ func TestExec(t *testing.T) {
 	goutils.InitZeroLog(goutils.WithNoColor{})
 
 	ast := assert.New(t)
-	r, err := goutils.Exec("ls -l")
+	r, err := goutils.Exec("ls -l", goutils.WithDumpOutput{})
 	ast.NoError(err)
 	log.Debug().Str("output", r.Output).Msg("Exec")
 

@@ -39,33 +39,51 @@ func CMD(cwd string, command string, args ...string) error {
 	return nil
 }
 
+type PreExecHandlerContext struct {
+	Cmd string
+	Opt *ExecOptions
+}
+
+type ExecutedHandlerContext struct {
+	Cmd string
+	Opt *ExecOptions
+	Res *ExecResult
+	Err error
+}
+
 type ExecOptions struct {
 	// Cwd is the working directory of the command. If empty, the current working directory is used.
 	Cwd string
 
-	PreExecHandler  func(*ExecOptions)
-	ExecutedHandler func(*ExecOptions, *ExecResult, error)
+	// DumpOutput indicates whether to dump the output to the standard output.
+	DumpOutput bool
+
+	PreExecHandler  func(*PreExecHandlerContext)
+	ExecutedHandler func(*ExecutedHandlerContext)
 }
 
 // preExecHandlerLog is the default pre-execution handler
-var preExecHandlerLog = func(o *ExecOptions) {
-	CommandLogger.Debug().Str("cwd", o.Cwd).Msg("Run Command")
+var preExecHandlerLog = func(ct *PreExecHandlerContext) {
+	CommandLogger.Debug().Str("cwd", ct.Opt.Cwd).Str("command", ct.Cmd).Msg("Run Command")
 }
 
-var executedHandlerErrorLog = func(o *ExecOptions, r *ExecResult, err error) {
-	if err != nil {
-		CommandLogger.Error().Err(err).Str("cwd", o.Cwd).Str("command", r.Output).Msg("Failed to run command")
+// executedHandlerErrorLog is the default executed handler
+var executedHandlerErrorLog = func(ct *ExecutedHandlerContext) {
+	if ct.Err != nil {
+		CommandLogger.Error().Err(ct.Err).Str("cwd", ct.Opt.Cwd).Str("command", ct.Cmd).Msg("Failed to run command")
 	}
 }
-var executedHandlerFatalLog = func(o *ExecOptions, r *ExecResult, err error) {
-	if err != nil {
-		CommandLogger.Fatal().Err(err).Str("cwd", o.Cwd).Str("command", r.Output).Msg("Failed to run command")
+
+var executedHandlerFatalLog = func(ct *ExecutedHandlerContext) {
+	if ct.Err != nil {
+		CommandLogger.Fatal().Err(ct.Err).Str("cwd", ct.Opt.Cwd).Str("command", ct.Cmd).Msg("Failed to run command")
 	}
 }
 
 // ExecOpt is the default options for Exec
 var ExecOpt = &ExecOptions{
 	Cwd:             "",
+	DumpOutput:      false,
 	PreExecHandler:  preExecHandlerLog,
 	ExecutedHandler: executedHandlerFatalLog,
 }
@@ -78,6 +96,14 @@ type WithCwd string
 
 func (w WithCwd) applyTo(o *ExecOptions) error {
 	o.Cwd = string(w)
+	return nil
+}
+
+type WithDumpOutput struct {
+}
+
+func (w WithDumpOutput) applyTo(o *ExecOptions) error {
+	o.DumpOutput = true
 	return nil
 }
 
@@ -105,7 +131,7 @@ type WithPreExecSlient struct {
 }
 
 func (w WithPreExecSlient) applyTo(o *ExecOptions) error {
-	o.PreExecHandler = func(o *ExecOptions) {}
+	o.PreExecHandler = func(*PreExecHandlerContext) {}
 	return nil
 }
 
@@ -129,7 +155,7 @@ type WithExecutedHandlerSlient struct {
 }
 
 func (w WithExecutedHandlerSlient) applyTo(o *ExecOptions) error {
-	o.ExecutedHandler = func(o *ExecOptions, r *ExecResult, err error) {}
+	o.ExecutedHandler = func(*ExecutedHandlerContext) {}
 	return nil
 }
 
@@ -205,13 +231,30 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 	command.Stderr = &resultWriter{isStderr: true, result: r}
 
 	if opt.PreExecHandler != nil {
-		opt.PreExecHandler(opt)
+		opt.PreExecHandler(&PreExecHandlerContext{Cmd: cmd, Opt: opt})
 	}
 
 	err := command.Run()
-	if opt.ExecutedHandler != nil {
-		opt.ExecutedHandler(opt, r, err)
+
+	if opt.DumpOutput {
+		lines := strings.Split(r.Output, "\n")
+		const N = 5
+		if len(lines) <= 2 * N {
+			println(r.Output)
+		} else {
+			for i := 0; i < N; i++ {
+				println(lines[i])
+			}
+			println("...")
+			for i := len(lines) - N; i < len(lines); i++ {
+				println(lines[i])
+			}
+		}
 	}
-	
+
+	if opt.ExecutedHandler != nil {
+		opt.ExecutedHandler(&ExecutedHandlerContext{Cmd: cmd, Opt: opt, Res: r, Err: err})
+	}
+
 	return r, err
 }
