@@ -62,6 +62,8 @@ type ExecOptions struct {
 
 	PreExecHandler  func(*PreExecHandlerContext)
 	ExecutedHandler func(*ExecutedHandlerContext)
+
+	Env map[string]string
 }
 
 // preExecHandlerLog is the default pre-execution handler
@@ -98,6 +100,13 @@ type WithCwd string
 
 func (w WithCwd) applyTo(o *ExecOptions) error {
 	o.Cwd = string(w)
+	return nil
+}
+
+type WithEnv map[string]string
+
+func (w WithEnv) applyTo(o *ExecOptions) error {
+	o.Env = map[string]string(w)
 	return nil
 }
 
@@ -231,6 +240,12 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 	command.Dir = opt.Cwd
 	command.Stdout = &resultWriter{isStdout: true, result: r}
 	command.Stderr = &resultWriter{isStderr: true, result: r}
+	if opt.Env != nil {
+		command.Env = os.Environ()
+		for k, v := range opt.Env {
+			command.Env = append(command.Env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
 
 	if opt.PreExecHandler != nil {
 		opt.PreExecHandler(&PreExecHandlerContext{Cmd: cmd, Opt: opt})
