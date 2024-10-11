@@ -84,3 +84,29 @@ func CopyFile(src, dst string) error {
 	_, err = io.Copy(dstFile, srcFile)
 	return err
 }
+
+// CopyDir copies a directory from src to dst
+func CopyDir(src, dst string) error {
+	// create dst directory recursively
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		dstPath := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, info.Mode())
+		}
+
+		return CopyFile(path, dstPath)
+	})
+}

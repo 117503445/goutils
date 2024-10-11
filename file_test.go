@@ -49,3 +49,7 @@ func TestCopyFile(t *testing.T) {
 	goutils.CopyFile("go.mod", "go.mod.bak")
 	goutils.CopyFile("go.mod", "1/go.mod.bak")
 }
+
+func TestCopyDir(t *testing.T) {
+	goutils.CopyDir("data", "data1")
+}
