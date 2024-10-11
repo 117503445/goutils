@@ -44,3 +44,8 @@ func TestReadJSON(t *testing.T) {
 	ast.NoError(err)
 	ast.Equal("value", test.Key)
 }
+
+func TestCopyFile(t *testing.T) {
+	goutils.CopyFile("go.mod", "go.mod.bak")
+	goutils.CopyFile("go.mod", "1/go.mod.bak")
+}

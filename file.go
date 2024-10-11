@@ -3,6 +3,7 @@ package goutils
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -59,4 +60,27 @@ func ReadJSON[T any](filename string, data *T) error {
 	defer file.Close()
 
 	return json.NewDecoder(file).Decode(data)
+}
+
+// CopyFile copies a file from src to dst
+func CopyFile(src, dst string) error {
+	// create dst directory recursively
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
