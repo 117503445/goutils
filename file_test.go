@@ -53,3 +53,21 @@ func TestCopyFile(t *testing.T) {
 func TestCopyDir(t *testing.T) {
 	goutils.CopyDir("data", "data1")
 }
+
+func TestReadText(t *testing.T) {
+	ast := assert.New(t)
+
+	filename := "go.mod"
+	data, err := goutils.ReadText(filename)
+	ast.NoError(err)
+	log.Info().Str("data", data).Msg("ReadText")
+}
+
+func TestWriteText(t *testing.T) {
+	ast := assert.New(t)
+
+	filename := "test.txt"
+	data := "test"
+	err := goutils.WriteText(filename, data)
+	ast.NoError(err)
+}

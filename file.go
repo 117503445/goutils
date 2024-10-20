@@ -62,6 +62,23 @@ func ReadJSON[T any](filename string, data *T) error {
 	return json.NewDecoder(file).Decode(data)
 }
 
+func ReadText(filename string) (string, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+func WriteText(filename, content string) error {
+	dir := filepath.Dir(filename)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(filename, []byte(content), 0644)
+}
+
 // CopyFile copies a file from src to dst
 func CopyFile(src, dst string) error {
 	// create dst directory recursively
