@@ -3,6 +3,7 @@ package goutils
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -126,4 +127,28 @@ func CopyDir(src, dst string) error {
 
 		return CopyFile(path, dstPath)
 	})
+}
+
+// FindGitRepoRoot returns the root directory of the git repository
+func FindGitRepoRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	p := wd
+	for {
+		if _, err := os.Stat(p + "/.git"); err == nil {
+			return p, nil
+		}
+		if p == "/" {
+			return "", fmt.Errorf("Git repo root not found")
+		}
+		p = filepath.Dir(p)
+	}
+}
+
+// PathExists returns true if the path exists
+func PathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
