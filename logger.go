@@ -82,7 +82,7 @@ func InitZeroLog(options ...logOption) {
 
 	var logger zerolog.Logger
 	if opt.Logger == nil {
-		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor}).Level(zerolog.DebugLevel)
+		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor, }).Level(zerolog.DebugLevel).With().Caller().Logger()
 	} else {
 		logger = *opt.Logger
 	}

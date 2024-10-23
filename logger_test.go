@@ -20,5 +20,5 @@ func TestInitZeroLog(t *testing.T) {
 	log.Info().Msg("InitZeroLog WithNoColor")
 
 	goutils.InitZeroLog(goutils.WithProduction{DirLog: "./data/logs"})
-	log.Info().Msg("InitZeroLog WithLogger")
+	log.Info().Msg("InitZeroLog WithProduction")
 }
