@@ -42,6 +42,10 @@ type WithProduction struct {
 }
 
 func (w WithProduction) applyTo(o *logOptions) error {
+	if w.DirLog == "" {
+		w.DirLog = "./logs"
+	}
+	
 	err := os.MkdirAll(w.DirLog, os.ModePerm)
 	if err != nil {
 		return err
