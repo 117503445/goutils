@@ -38,20 +38,26 @@ func (w WithLogger) applyTo(o *logOptions) error {
 
 // WithProduction is a log option, which is aimed to be used in production environment.
 type WithProduction struct {
-	DirLog string
+	DirLog   string
+	FileName string
 }
 
 func (w WithProduction) applyTo(o *logOptions) error {
 	if w.DirLog == "" {
 		w.DirLog = "./logs"
 	}
-	
+
 	err := os.MkdirAll(w.DirLog, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	logFilePath := fmt.Sprintf("%s/%v.jsonl", w.DirLog, TimeStrSec())
+	fileName := w.FileName
+	if fileName == "" {
+		fileName = TimeStrSec()
+	}
+
+	logFilePath := fmt.Sprintf("%s/%v.jsonl", w.DirLog, fileName)
 
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -86,7 +92,7 @@ func InitZeroLog(options ...logOption) {
 
 	var logger zerolog.Logger
 	if opt.Logger == nil {
-		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor, }).Level(zerolog.DebugLevel).With().Caller().Logger()
+		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor}).Level(zerolog.DebugLevel).With().Caller().Logger()
 	} else {
 		logger = *opt.Logger
 	}
