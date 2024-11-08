@@ -40,6 +40,7 @@ func (w WithLogger) applyTo(o *logOptions) error {
 type WithProduction struct {
 	DirLog   string
 	FileName string
+	Append   bool // Append to existing log file, if false, it will overwrite the existing log file.
 }
 
 func (w WithProduction) applyTo(o *logOptions) error {
@@ -58,6 +59,21 @@ func (w WithProduction) applyTo(o *logOptions) error {
 	}
 
 	logFilePath := fmt.Sprintf("%s/%v.jsonl", w.DirLog, fileName)
+
+	fs, err := os.Stat(logFilePath)
+	if err != nil {
+		return err
+	}
+	if fs.IsDir() {
+		// If the file is a directory, return an error
+		return fmt.Errorf("The file path is a directory")
+	}
+	if !w.Append {
+		// If the file exists, remove it
+		if err = os.Remove(logFilePath); err != nil {
+			return err
+		}
+	}
 
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
