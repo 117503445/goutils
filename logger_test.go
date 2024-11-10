@@ -9,9 +9,6 @@ import (
 )
 
 func TestInitZeroLog(t *testing.T) {
-	// var err error
-	// ast := assert.New(t)
-
 	goutils.InitZeroLog()
 	log.Info().Msg("InitZeroLog")
 

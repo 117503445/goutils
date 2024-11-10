@@ -66,6 +66,8 @@ func (w WithProduction) applyTo(o *logOptions) error {
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return err
+			} else {
+				return nil
 			}
 		}
 		if fs.IsDir() {
