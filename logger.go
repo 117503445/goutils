@@ -60,19 +60,29 @@ func (w WithProduction) applyTo(o *logOptions) error {
 
 	logFilePath := fmt.Sprintf("%s/%v.jsonl", w.DirLog, fileName)
 
-	fs, err := os.Stat(logFilePath)
-	if err != nil {
-		return err
-	}
-	if fs.IsDir() {
-		// If the file is a directory, return an error
-		return fmt.Errorf("The file path is a directory")
-	}
-	if !w.Append {
-		// If the file exists, remove it
-		if err = os.Remove(logFilePath); err != nil {
-			return err
+	// Check whether the file valid
+	checkFile := func() error {
+		fs, err := os.Stat(logFilePath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
 		}
+		if fs.IsDir() {
+			// If the file is a directory, return an error
+			return fmt.Errorf("The file path is a directory")
+		}
+		if !w.Append {
+			// If the file exists, remove it
+			if err = os.Remove(logFilePath); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if err = checkFile(); err != nil {
+		return err
 	}
 
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
