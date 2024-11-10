@@ -100,7 +100,17 @@ func CopyFile(src, dst string) error {
 	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// copy file mode
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(dst, srcInfo.Mode())
 }
 
 // MoveFile moves a file from src to dst
