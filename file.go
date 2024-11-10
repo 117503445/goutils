@@ -103,6 +103,15 @@ func CopyFile(src, dst string) error {
 	return err
 }
 
+// MoveFile moves a file from src to dst
+func MoveFile(src, dst string) error {
+	if err := CopyFile(src, dst); err != nil {
+		return err
+	}
+
+	return os.Remove(src)
+}
+
 // CopyDir copies a directory from src to dst
 func CopyDir(src, dst string) error {
 	// create dst directory recursively
@@ -127,6 +136,15 @@ func CopyDir(src, dst string) error {
 
 		return CopyFile(path, dstPath)
 	})
+}
+
+// MoveDir moves a directory from src to dst
+func MoveDir(src, dst string) error {
+	if err := CopyDir(src, dst); err != nil {
+		return err
+	}
+
+	return os.RemoveAll(src)
 }
 
 // FindGitRepoRoot returns the root directory of the git repository

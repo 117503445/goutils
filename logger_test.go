@@ -3,10 +3,9 @@ package goutils_test
 import (
 	"testing"
 
-	"github.com/117503445/goutils"
-	// "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	// "github.com/stretchr/testify/assert"
+
+	"github.com/117503445/goutils"
 )
 
 func TestInitZeroLog(t *testing.T) {
