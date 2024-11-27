@@ -60,6 +60,8 @@ type ExecOptions struct {
 	// DumpOutput indicates whether to dump the output to the standard output.
 	DumpOutput bool
 
+	DumpCompleteOutput bool
+
 	PreExecHandler  func(*PreExecHandlerContext)
 	ExecutedHandler func(*ExecutedHandlerContext)
 
@@ -268,9 +270,8 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 
 		lines := strings.Split(r.Output, "\n")
 		const N = 5
-		if len(lines) <= 2*N {
-			println(r.Output)
-		} else {
+
+		if len(lines) > 2*N && !opt.DumpCompleteOutput {
 			for i := 0; i < N; i++ {
 				println(lines[i])
 			}
@@ -278,6 +279,8 @@ func Exec(cmd string, opts ...execOption) (*ExecResult, error) {
 			for i := len(lines) - N; i < len(lines); i++ {
 				println(lines[i])
 			}
+		} else {
+			println(r.Output)
 		}
 	}
 
