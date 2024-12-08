@@ -93,7 +93,7 @@ func (w WithProduction) applyTo(o *logOptions) error {
 	}
 
 	multiWriter := zerolog.MultiLevelWriter(
-		zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"},
+		zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000"},
 		logFile,
 	)
 
@@ -118,9 +118,11 @@ func InitZeroLog(options ...logOption) {
 		}
 	}
 
+	zerolog.TimeFieldFormat = "2006-01-02 15:04:05.000"
+
 	var logger zerolog.Logger
 	if opt.Logger == nil {
-		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05", NoColor: opt.NoColor}).Level(zerolog.DebugLevel).With().Caller().Logger()
+		logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: opt.NoColor}).Level(zerolog.DebugLevel).With().Caller().Logger()
 	} else {
 		logger = *opt.Logger
 	}
