@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -38,9 +39,8 @@ func (w WithLogger) applyTo(o *logOptions) error {
 
 // WithProduction is a log option, which is aimed to be used in production environment.
 type WithProduction struct {
-	DirLog   string
-	FileName string
-	Append   bool // Append to existing log file, if false, it will overwrite the existing log file.
+	DirLog string
+	Append bool // Append to existing log file, if false, it will overwrite the existing log file.
 }
 
 func (w WithProduction) applyTo(o *logOptions) error {
@@ -53,48 +53,48 @@ func (w WithProduction) applyTo(o *logOptions) error {
 		return err
 	}
 
-	fileName := w.FileName
-	if fileName == "" {
-		fileName = TimeStrSec()
-	}
+	fileName := TimeStrSec()
+	extList := []string{"jsonl", "log"}
+	fileList := make([]io.Writer, 0)
+	for _, ext := range extList {
+		logFilePath := fmt.Sprintf("%s/%v.%v", w.DirLog, fileName, ext)
+		// Check whether the file valid
+		checkFile := func() error {
+			fs, err := os.Stat(logFilePath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					return err
+				} else {
+					return nil
+				}
+			}
+			if fs.IsDir() {
+				// If the file is a directory, return an error
+				return fmt.Errorf("The file path is a directory")
+			}
+			if !w.Append {
+				// If the file exists, remove it
+				if err = os.Remove(logFilePath); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 
-	logFilePath := fmt.Sprintf("%s/%v.jsonl", w.DirLog, fileName)
-
-	// Check whether the file valid
-	checkFile := func() error {
-		fs, err := os.Stat(logFilePath)
+		if err = checkFile(); err != nil {
+			return err
+		}
+		logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			} else {
-				return nil
-			}
+			return err
 		}
-		if fs.IsDir() {
-			// If the file is a directory, return an error
-			return fmt.Errorf("The file path is a directory")
-		}
-		if !w.Append {
-			// If the file exists, remove it
-			if err = os.Remove(logFilePath); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	if err = checkFile(); err != nil {
-		return err
-	}
-
-	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		return err
+		fileList = append(fileList, logFile)
 	}
 
 	multiWriter := zerolog.MultiLevelWriter(
 		zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000"},
-		logFile,
+		fileList[0],
+		zerolog.ConsoleWriter{Out: fileList[1], TimeFormat: "2006-01-02 15:04:05.000", NoColor: true},
 	)
 
 	logger := zerolog.New(multiWriter).With().
