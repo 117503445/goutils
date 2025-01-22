@@ -1,6 +1,7 @@
 package goutils_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog/log"
@@ -70,5 +71,12 @@ func TestWriteText(t *testing.T) {
 	filename := "test.txt"
 	data := "test"
 	err := goutils.WriteText(filename, data)
+	ast.NoError(err)
+}
+
+func TestAtomicWriteFile(t *testing.T) {
+	ast := assert.New(t)
+
+	err := goutils.AtomicWriteFile("test.txt", strings.NewReader("test"))
 	ast.NoError(err)
 }

@@ -1,7 +1,6 @@
 package goutils
 
 import (
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,12 +26,5 @@ func Download(url string, filePath string) error {
 		log.Warn().Str("status", resp.Status).Msg("non-200 status code received")
 	}
 
-	out, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	return err
+	return AtomicWriteFile(filePath, resp.Body)
 }

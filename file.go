@@ -196,3 +196,36 @@ func DirExists(path string) bool {
 	}
 	return info.IsDir()
 }
+
+// AtomicWriteFile writes the content of reader to a file at path atomically.
+func AtomicWriteFile(path string, reader io.Reader) error {
+	// 获取目标文件所在的目录
+	dir := filepath.Dir(path)
+
+	// 定义临时文件模式，*会被替换为随机字符串
+	pattern :=  filepath.Base(path)+ ".tmp.*"
+
+	// 创建临时文件
+	tempFile, err := os.CreateTemp(dir, pattern)
+	if err != nil {
+		return err
+	}
+
+	// 将reader的内容写入临时文件
+	if _, err := io.Copy(tempFile, reader); err != nil {
+		_ = tempFile.Close()
+		return err
+	}
+
+	// 关闭临时文件
+	if err := tempFile.Close(); err != nil {
+		return err
+	}
+
+	// 原子性重命名临时文件为目标文件名
+	if err := os.Rename(tempFile.Name(), path); err != nil {
+		return err
+	}
+
+	return nil
+}
