@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -107,6 +109,11 @@ func (w WithProduction) applyTo(o *logOptions) error {
 }
 
 func InitZeroLog(options ...logOption) {
+	// https://github.com/rs/zerolog?tab=readme-ov-file#add-file-and-line-number-to-log
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		return filepath.Base(file) + ":" + strconv.Itoa(line)
+	}
+
 	opt := &logOptions{
 		NoColor: false,
 	}
