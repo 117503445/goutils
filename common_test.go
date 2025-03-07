@@ -17,7 +17,8 @@ func TestCommon(t *testing.T) {
 
 	log.Debug().Str("TimeStrSec", goutils.TimeStrSec()).Str("TimeStrMilliSec", goutils.TimeStrMilliSec()).Msg("Time")
 
-	log.Debug().Str("UUID4", goutils.UUID4()).Msg("UUID4")
+	log.Debug().Str("UUID4", goutils.UUID4()).Send()
+	log.Debug().Str("UUID7", goutils.UUID7()).Send()
 
 	dir, err := goutils.FindGitRepoRoot()
 	ast.NoError(err)

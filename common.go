@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 // TimeStrSec returns the time format string, like 20240915.221219
@@ -18,4 +19,12 @@ func TimeStrMilliSec() string {
 
 func UUID4() string {
 	return uuid.New().String()
+}
+
+func UUID7() string {
+	uuid, err := uuid.NewV7()
+	if err != nil {
+		log.Fatal().Err(err).Msg("UUID7 failed")
+	}
+	return uuid.String()
 }
