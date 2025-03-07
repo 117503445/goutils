@@ -29,14 +29,14 @@ func Commands(cmds []string) *exec.Cmd {
 	return cmd
 }
 
-func SetEnvs( envs map[string]string,cmd *exec.Cmd) *exec.Cmd {
+func SetEnvs(envs map[string]string, cmd *exec.Cmd) *exec.Cmd {
 	for k, v := range envs {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 	return cmd
 }
 
-func SetPwd(pwd string,cmd *exec.Cmd ) *exec.Cmd {
+func SetPwd(pwd string, cmd *exec.Cmd) *exec.Cmd {
 	cmd.Dir = pwd
 	return cmd
 }
@@ -81,7 +81,7 @@ func Run(cmd *exec.Cmd, cfg ...*RunCfg) (string, error) {
 
 	start := time.Now()
 	if !config.DisableLog {
-		log.Info().Str("cmd", cmd.String()).CallerSkipFrame(1).Send()
+		log.Info().Str("cmd", cmd.String()).CallerSkipFrame(1).Msg("Executing")
 	}
 
 	cmd.Stdout = multiWriter
@@ -91,7 +91,7 @@ func Run(cmd *exec.Cmd, cfg ...*RunCfg) (string, error) {
 	output := buffer.String()
 
 	if !config.DisableLog {
-		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", formatDuration(time.Since(start))).CallerSkipFrame(1).Send()
+		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", formatDuration(time.Since(start))).CallerSkipFrame(1).Msg("Executed")
 	}
 
 	return output, err
