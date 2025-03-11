@@ -25,7 +25,7 @@ func TestWriteJSON(t *testing.T) {
 		"key": "value",
 	}
 	filename := "test.json"
-	err := goutils.WriteJSON(filename, data)
+	err := goutils.WriteJson(filename, data)
 	ast.NoError(err)
 }
 
@@ -34,7 +34,7 @@ func TestReadJSON(t *testing.T) {
 
 	filename := "test.json"
 	var data map[string]interface{}
-	err := goutils.ReadJSON(filename, &data)
+	err := goutils.ReadJson(filename, &data)
 	ast.NoError(err)
 	ast.Equal("value", data["key"])
 
@@ -42,9 +42,19 @@ func TestReadJSON(t *testing.T) {
 		Key string `json:"key"`
 	}
 	var test Test
-	err = goutils.ReadJSON(filename, &test)
+	err = goutils.ReadJson(filename, &test)
 	ast.NoError(err)
 	ast.Equal("value", test.Key)
+}
+
+func TestReadYAML(t *testing.T) {
+	ast := assert.New(t)
+
+	filename := "test.yaml"
+	var data map[string]interface{}
+	err := goutils.ReadYaml(filename, &data)
+	ast.NoError(err)
+	ast.Equal("v", data["k"])
 }
 
 func TestCopyFile(t *testing.T) {

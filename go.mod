@@ -3,7 +3,9 @@ module github.com/117503445/goutils
 go 1.23.2
 
 require (
+	github.com/goccy/go-yaml v1.15.23
 	github.com/google/uuid v1.6.0
+	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
 )

@@ -1,12 +1,16 @@
 package goutils
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/goccy/go-yaml"
+	toml "github.com/pelletier/go-toml/v2"
 )
 
 // GetGitRootDir returns the root directory of the git repository
@@ -29,38 +33,78 @@ func GetGitRootDir() (string, error) {
 	}
 }
 
-// WriteJSON writes data to a file in JSON format
-func WriteJSON(filename string, data interface{}) error {
-	// mkdir -p
-	dir := filepath.Dir(filename)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
+// func writeFile(filename string, content []byte) error {
+// 	// mkdir -p
+// 	dir := filepath.Dir(filename)
+// 	if err := os.MkdirAll(dir, 0755); err != nil {
+// 		return err
+// 	}
 
-	file, err := os.Create(filename)
+// 	file, err := os.Create(filename)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer file.Close()
+
+// 	_, err = file.Write(content)
+// 	return err
+// }
+
+// WriteJson writes data to a file in JSON format
+func WriteJson(filename string, data any) error {
+	content, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	jsonData, err := json.MarshalIndent(data, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(jsonData)
-	return err
+	return WriteText(filename, string(content))
 }
 
-// ReadJSON with generic type
-func ReadJSON[T any](filename string, data *T) error {
+// ReadJson with generic type
+func ReadJson[T any](filename string, data *T) error {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	return json.NewDecoder(bytes.NewReader(content)).Decode(data)
+}
+
+func WriteYaml[T any](filename string, data T) error {
+	content, err := yaml.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return WriteText(filename, string(content))
+}
+
+func ReadYaml[T any](filename string, data *T) error {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	return yaml.NewDecoder(bytes.NewReader(content)).Decode(data)
+}
+
+func WriteToml[T any](filename string, data T) error {
+	content, err := toml.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return WriteText(filename, string(content))
+}
+
+func ReadToml[T any](filename string, data *T) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	return json.NewDecoder(file).Decode(data)
+	return toml.NewDecoder(file).Decode(data)
 }
 
 func ReadText(filename string) (string, error) {
@@ -169,7 +213,7 @@ func FindGitRepoRoot() (string, error) {
 			return p, nil
 		}
 		if p == "/" {
-			return "", fmt.Errorf("Git repo root not found")
+			return "", fmt.Errorf("git repo root not found")
 		}
 		p = filepath.Dir(p)
 	}
@@ -203,7 +247,7 @@ func AtomicWriteFile(path string, reader io.Reader) error {
 	dir := filepath.Dir(path)
 
 	// 定义临时文件模式，*会被替换为随机字符串
-	pattern :=  filepath.Base(path)+ ".tmp.*"
+	pattern := filepath.Base(path) + ".tmp.*"
 
 	// 创建临时文件
 	tempFile, err := os.CreateTemp(dir, pattern)
