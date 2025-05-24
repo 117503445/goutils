@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/117503445/goutils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -57,21 +58,6 @@ func Run(cmd *exec.Cmd, cfg ...*RunCfg) (string, error) {
 		log.Fatal().Msg("Run only support one config")
 	}
 
-	formatDuration := func(d time.Duration) string {
-		// 将 duration 转换为秒
-		sec := d.Seconds()
-
-		// 确定合适的单位和数值范围
-		if sec < 1 {
-			ms := d.Milliseconds() // 毫秒
-			return fmt.Sprintf("%dms", ms)
-		} else if sec >= 1 && sec < 60 {
-			return fmt.Sprintf("%.3fs", sec)
-		} else {
-			return fmt.Sprintf("%.3gs", sec)
-		}
-	}
-
 	var buffer bytes.Buffer
 	writers := []io.Writer{&buffer}
 	if len(config.Writers) > 0 {
@@ -91,7 +77,7 @@ func Run(cmd *exec.Cmd, cfg ...*RunCfg) (string, error) {
 	output := buffer.String()
 
 	if !config.DisableLog {
-		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", formatDuration(time.Since(start))).CallerSkipFrame(1).Msg("Executed")
+		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", goutils.DurationToStr(time.Since(start))).CallerSkipFrame(1).Msg("Executed")
 	}
 
 	return output, err
