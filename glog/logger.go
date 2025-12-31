@@ -1,12 +1,61 @@
 package glog
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+type ConsoleWriterConfig struct {
+	RequestId string
+	DirBuild  string
+	NoColor   bool
+}
+
+func GetConsoleWriter(config ...ConsoleWriterConfig) zerolog.ConsoleWriter {
+	cfg := ConsoleWriterConfig{}
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+
+	if cfg.RequestId == "" {
+		return zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: cfg.NoColor}
+	} else {
+		return zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: cfg.NoColor, FormatCaller: func(i any) string {
+			var c string
+			if cc, ok := i.(string); ok {
+				c = cc
+			}
+			d := cfg.DirBuild
+			if d == "unknown" {
+				d = ""
+			}
+			if d == "" {
+				if cwd, err := os.Getwd(); err == nil {
+					d = cwd
+				}
+			}
+
+			if d != "" {
+				if rel, err := filepath.Rel(d, c); err == nil {
+					c = rel
+				}
+			}
+
+			if len(c) > 0 {
+				c = fmt.Sprintf("[%v] %v >", cfg.RequestId, c)
+			} else {
+				c = fmt.Sprintf("[%v] >", cfg.RequestId)
+			}
+			return c
+		},
+		}
+	}
+}
 
 func InitZeroLog(config ...InitZeroLogConfig) {
 	var cfg InitZeroLogConfig
@@ -31,7 +80,7 @@ func InitZeroLog(config ...InitZeroLogConfig) {
 
 	logger := cfg.Logger
 	if logger == nil {
-		l := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: false}).Level(zerolog.DebugLevel).With().Caller().Logger()
+		l := log.Output(GetConsoleWriter()).Level(zerolog.DebugLevel).With().Caller().Logger()
 		logger = &l
 	}
 	log.Logger = *logger
@@ -39,5 +88,4 @@ func InitZeroLog(config ...InitZeroLogConfig) {
 
 type InitZeroLogConfig struct {
 	Logger *zerolog.Logger
-	// DirProject string
 }
