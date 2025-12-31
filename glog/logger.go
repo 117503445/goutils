@@ -16,7 +16,7 @@ type ConsoleWriterConfig struct {
 	NoColor   bool
 }
 
-func GetConsoleWriter(config ...ConsoleWriterConfig) zerolog.ConsoleWriter {
+func NewConsoleWriter(config ...ConsoleWriterConfig) zerolog.ConsoleWriter {
 	cfg := ConsoleWriterConfig{}
 	if len(config) > 0 {
 		cfg = config[0]
@@ -80,7 +80,7 @@ func InitZeroLog(config ...InitZeroLogConfig) {
 
 	logger := cfg.Logger
 	if logger == nil {
-		l := log.Output(GetConsoleWriter()).Level(zerolog.DebugLevel).With().Caller().Logger()
+		l := log.Output(NewConsoleWriter()).Level(zerolog.DebugLevel).With().Caller().Logger()
 		logger = &l
 	}
 	log.Logger = *logger
