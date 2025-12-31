@@ -27,6 +27,7 @@ func InitZeroLog(config ...InitZeroLogConfig) {
 		// 	return f + ":" + strconv.Itoa(line)
 		// }
 	}
+	zerolog.TimeFieldFormat = "2006-01-02 15:04:05.000"
 
 	logger := cfg.Logger
 	if logger == nil {
