@@ -1,7 +1,9 @@
 package goutils
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -353,4 +355,110 @@ func GetBuildInfo(ctx context.Context, params ...GetBuildInfoParams) (*BuildInfo
 	info.BuildDir = dir
 
 	return info, nil
+}
+
+type ExtractConfig struct {
+	SrcType string // "tar" "targz"
+}
+
+func Extract(ctx context.Context, src string, dst string, config ...ExtractConfig) error {
+	cfg := ExtractConfig{}
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+
+	srcType := cfg.SrcType
+	if srcType == "" {
+		if strings.HasSuffix(src, ".tar") {
+			srcType = "tar"
+		} else if strings.HasSuffix(src, ".tar.gz") {
+			srcType = "targz"
+		} else {
+			return fmt.Errorf("unsupported source type: %s", src)
+		}
+	}
+
+	// Open the source file
+	file, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer file.Close()
+
+	var tarReader *tar.Reader
+
+	switch srcType {
+	case "tar":
+		tarReader = tar.NewReader(file)
+	case "targz":
+		gzipReader, err := gzip.NewReader(file)
+		if err != nil {
+			return fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gzipReader.Close()
+		tarReader = tar.NewReader(gzipReader)
+	default:
+		return fmt.Errorf("unsupported source type: %s", srcType)
+	}
+
+	// Create destination directory
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// Extract files
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read tar header: %w", err)
+		}
+
+		// Construct the full path for the extracted file
+		targetPath := filepath.Join(dst, header.Name)
+
+		// Check for directory traversal attacks
+		if !strings.HasPrefix(targetPath, filepath.Clean(dst)+string(os.PathSeparator)) &&
+			targetPath != filepath.Clean(dst) {
+			return fmt.Errorf("invalid file path: %s", header.Name)
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// Create directory
+			if err := os.MkdirAll(targetPath, os.FileMode(header.Mode)); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", targetPath, err)
+			}
+		case tar.TypeReg:
+			// Create file
+			dir := filepath.Dir(targetPath)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			}
+
+			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return fmt.Errorf("failed to create file %s: %w", targetPath, err)
+			}
+
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				outFile.Close()
+				return fmt.Errorf("failed to write file %s: %w", targetPath, err)
+			}
+			outFile.Close()
+		default:
+			// Skip other types (symlinks, etc.) for now
+			continue
+		}
+	}
+
+	return nil
 }

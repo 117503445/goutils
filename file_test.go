@@ -1,10 +1,14 @@
 package goutils_test
 
 import (
+	"archive/tar"
+	"compress/gzip"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -205,4 +209,184 @@ func TestAtomicWriteFile(t *testing.T) {
 	data, err := goutils.ReadText(filename)
 	ast.NoError(err)
 	ast.Equal("test", data)
+}
+
+// createTestTar creates a test tar file with some content
+func createTestTar(t *testing.T, tarPath string) {
+	file, err := os.Create(tarPath)
+	assert.NoError(t, err)
+	defer file.Close()
+
+	tarWriter := tar.NewWriter(file)
+	defer tarWriter.Close()
+
+	// Add a file to the tar
+	content := "test content"
+	header := &tar.Header{
+		Name:    "test.txt",
+		Size:    int64(len(content)),
+		Mode:    0644,
+		ModTime: time.Now(),
+	}
+	err = tarWriter.WriteHeader(header)
+	assert.NoError(t, err)
+
+	_, err = tarWriter.Write([]byte(content))
+	assert.NoError(t, err)
+
+	// Add a nested file
+	nestedContent := "nested content"
+	nestedHeader := &tar.Header{
+		Name:    "dir/nested.txt",
+		Size:    int64(len(nestedContent)),
+		Mode:    0644,
+		ModTime: time.Now(),
+	}
+	err = tarWriter.WriteHeader(nestedHeader)
+	assert.NoError(t, err)
+
+	_, err = tarWriter.Write([]byte(nestedContent))
+	assert.NoError(t, err)
+}
+
+// createTestTarGz creates a test tar.gz file with some content
+func createTestTarGz(t *testing.T, tarGzPath string) {
+	file, err := os.Create(tarGzPath)
+	assert.NoError(t, err)
+	defer file.Close()
+
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	// Add a file to the tar.gz
+	content := "gzip test content"
+	header := &tar.Header{
+		Name:    "gzip_test.txt",
+		Size:    int64(len(content)),
+		Mode:    0644,
+		ModTime: time.Now(),
+	}
+	err = tarWriter.WriteHeader(header)
+	assert.NoError(t, err)
+
+	_, err = tarWriter.Write([]byte(content))
+	assert.NoError(t, err)
+}
+
+func TestExtractTar(t *testing.T) {
+	ast := assert.New(t)
+
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
+
+	// Create test tar file
+	tarPath := filepath.Join(tempDir, "test.tar")
+	createTestTar(t, tarPath)
+
+	// Extract directory
+	extractDir := filepath.Join(tempDir, "extracted")
+	err := goutils.Extract(context.Background(), tarPath, extractDir)
+	ast.NoError(err)
+
+	// Verify extracted files
+	testFile := filepath.Join(extractDir, "test.txt")
+	ast.True(goutils.FileExists(testFile))
+	content, err := goutils.ReadText(testFile)
+	ast.NoError(err)
+	ast.Equal("test content", content)
+
+	nestedFile := filepath.Join(extractDir, "dir", "nested.txt")
+	ast.True(goutils.FileExists(nestedFile))
+	nestedContent, err := goutils.ReadText(nestedFile)
+	ast.NoError(err)
+	ast.Equal("nested content", nestedContent)
+}
+
+func TestExtractTarGz(t *testing.T) {
+	ast := assert.New(t)
+
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
+
+	// Create test tar.gz file
+	tarGzPath := filepath.Join(tempDir, "test.tar.gz")
+	createTestTarGz(t, tarGzPath)
+
+	// Extract directory
+	extractDir := filepath.Join(tempDir, "extracted")
+	err := goutils.Extract(context.Background(), tarGzPath, extractDir)
+	ast.NoError(err)
+
+	// Verify extracted files
+	testFile := filepath.Join(extractDir, "gzip_test.txt")
+	ast.True(goutils.FileExists(testFile))
+	content, err := goutils.ReadText(testFile)
+	ast.NoError(err)
+	ast.Equal("gzip test content", content)
+}
+
+func TestExtractWithConfig(t *testing.T) {
+	ast := assert.New(t)
+
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
+
+	// Create test tar.gz file
+	tarGzPath := filepath.Join(tempDir, "test.tar.gz")
+	createTestTarGz(t, tarGzPath)
+
+	// Extract with explicit config
+	extractDir := filepath.Join(tempDir, "extracted")
+	config := goutils.ExtractConfig{SrcType: "targz"}
+	err := goutils.Extract(context.Background(), tarGzPath, extractDir, config)
+	ast.NoError(err)
+
+	// Verify extracted files
+	testFile := filepath.Join(extractDir, "gzip_test.txt")
+	ast.True(goutils.FileExists(testFile))
+	content, err := goutils.ReadText(testFile)
+	ast.NoError(err)
+	ast.Equal("gzip test content", content)
+}
+
+func TestExtractUnsupportedType(t *testing.T) {
+	ast := assert.New(t)
+
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
+
+	// Create a regular file (not tar or tar.gz)
+	regularFile := filepath.Join(tempDir, "regular.txt")
+	err := goutils.WriteText(regularFile, "regular content")
+	ast.NoError(err)
+
+	// Try to extract
+	extractDir := filepath.Join(tempDir, "extracted")
+	err = goutils.Extract(context.Background(), regularFile, extractDir)
+	ast.Error(err)
+	ast.Contains(err.Error(), "unsupported source type")
+}
+
+func TestExtractContextCancellation(t *testing.T) {
+	ast := assert.New(t)
+
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
+
+	// Create test tar file
+	tarPath := filepath.Join(tempDir, "test.tar")
+	createTestTar(t, tarPath)
+
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// Try to extract
+	extractDir := filepath.Join(tempDir, "extracted")
+	err := goutils.Extract(ctx, tarPath, extractDir)
+	ast.Error(err)
+	ast.Equal(context.Canceled, err)
 }
