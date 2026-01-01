@@ -2,12 +2,16 @@ package goutils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	toml "github.com/pelletier/go-toml/v2"
@@ -272,4 +276,81 @@ func AtomicWriteFile(path string, reader io.Reader) error {
 	}
 
 	return nil
+}
+
+type GetBuildInfoParams struct {
+	Dir string
+}
+
+type BuildInfo struct {
+	GitCommit  string
+	GitBranch  string
+	GitTag     string
+	GitDirty   bool
+	GitVersion string
+	BuildTime  string
+	BuildDir   string
+}
+
+func GetBuildInfo(ctx context.Context, params ...GetBuildInfoParams) (*BuildInfo, error) {
+	param := GetBuildInfoParams{}
+	if len(params) > 0 {
+		param = params[0]
+	}
+
+	dir := param.Dir
+	if dir == "" {
+		var err error
+		dir, err = FindGitRepoRoot()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	info := &BuildInfo{}
+
+	// Get git commit
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = dir
+	if commit, err := cmd.Output(); err == nil {
+		info.GitCommit = strings.TrimSpace(string(commit))
+	}
+
+	// Get git branch
+	cmd = exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd.Dir = dir
+	if branch, err := cmd.Output(); err == nil {
+		info.GitBranch = strings.TrimSpace(string(branch))
+	}
+
+	// Get git tag
+	cmd = exec.Command("git", "tag", "--points-at", "HEAD")
+	cmd.Dir = dir
+	if tag, err := cmd.Output(); err == nil {
+		info.GitTag = strings.TrimSpace(string(tag))
+	}
+
+	// Check if dirty
+	cmd = exec.Command("git", "status", "--porcelain")
+	cmd.Dir = dir
+	if status, err := cmd.Output(); err == nil {
+		info.GitDirty = len(status) > 0
+	}
+
+	// Build version
+	info.GitVersion = info.GitCommit
+	if info.GitTag != "" {
+		info.GitVersion = info.GitTag
+	}
+	if info.GitDirty {
+		info.GitVersion = info.GitVersion + "-dirty"
+	}
+
+	// Build time
+	info.BuildTime = time.Now().Format("2006-01-02 15:04:05")
+
+	// Build dir
+	info.BuildDir = dir
+
+	return info, nil
 }
