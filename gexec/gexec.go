@@ -8,9 +8,36 @@ import (
 	"strings"
 	"time"
 
-	"github.com/117503445/goutils"
 	"github.com/rs/zerolog/log"
 )
+
+// durationToStr converts a duration to a string representation
+func durationToStr(d time.Duration) string {
+	sec := d.Seconds()
+
+	if sec < 1 {
+		ms := sec * 1000
+		return fmt.Sprintf("%.1fms", ms)
+	} else if sec < 60 {
+		return fmt.Sprintf("%.1fs", sec)
+	} else if sec < 3600 {
+		m := int(sec / 60)
+		s := sec - float64(m)*60
+		if s > 0 {
+			return fmt.Sprintf("%dm%.1fs", m, s)
+		}
+		return fmt.Sprintf("%dm", m)
+	} else {
+		h := int(sec / 3600)
+		remaining := sec - float64(h)*3600
+		m := int(remaining / 60)
+		s := remaining - float64(m)*60
+		if s > 0 {
+			return fmt.Sprintf("%dh%dm%.1fs", h, m, s)
+		}
+		return fmt.Sprintf("%dh%dm", h, m)
+	}
+}
 
 // Command creates a new exec.Cmd instance by splitting the command string using cmd.split(" ").
 // Important Note: This method poses significant security risks, particularly related to parameter handling errors.
@@ -77,7 +104,7 @@ func Run(cmd *exec.Cmd, cfg ...*RunCfg) (string, error) {
 	output := buffer.String()
 
 	if !config.DisableLog {
-		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", goutils.DurationToStr(time.Since(start))).CallerSkipFrame(1).Msg("Executed")
+		log.Info().Str("cmd", cmd.String()).Str("output", output).Err(err).Str("duration", durationToStr(time.Since(start))).CallerSkipFrame(1).Msg("Executed")
 	}
 
 	return output, err

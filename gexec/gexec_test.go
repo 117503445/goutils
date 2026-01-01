@@ -1,48 +1,42 @@
 package gexec_test
 
 import (
-	"io"
-	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/117503445/goutils"
 	"github.com/117503445/goutils/gexec"
 )
 
 func TestCMD(t *testing.T) {
+	ast := assert.New(t)
 	goutils.InitZeroLog(goutils.WithNoColor{})
 
-	cmd := gexec.Commands([]string{"ls", "-l"})
-	cmd.Run()
+	// Create temporary directory for this test
+	tempDir := t.TempDir()
 
-	// gexec.Run(gexec.Command("echo 1"))
+	// Test basic command execution
+	cmd := gexec.Commands([]string{"echo", "hello"})
+	err := cmd.Run()
+	ast.NoError(err)
 
-	// gexec.Run(gexec.Commands([]string{"bash", "-c", "echo $SHELL"}))
-
-	// cmd = gexec.Commands([]string{"bash", "-c", "echo $A"})
-	// gexec.SetEnvs(cmd, map[string]string{
-	// 	"A": "1",
-	// })
-	// gexec.Run(cmd)
-
-	gexec.Run(
+	// Test Run function with environment variables
+	_, err = gexec.Run(
 		gexec.SetPwd(
-			"/tmp",
+			tempDir,
 			gexec.SetEnvs(
 				map[string]string{
 					"A": "1",
 				},
 				gexec.Commands(
-					[]string{"bash", "-c", "pwd && echo $A && exit -4"},
+					[]string{"bash", "-c", "pwd && echo $A"},
 				),
 			),
 		),
 		&gexec.RunCfg{
-			DisableLog: false,
-			Writers: []io.Writer{
-				os.Stdout,
-			},
+			DisableLog: true, // Disable logging for cleaner test output
 		},
 	)
-
+	ast.NoError(err)
 }
