@@ -80,7 +80,7 @@ func InitZeroLog(config ...InitZeroLogConfig) {
 
 	logger := cfg.Logger
 	if logger == nil {
-		l := log.Output(NewConsoleWriter()).Level(zerolog.DebugLevel).With().Caller().Logger()
+		l := log.Output(NewConsoleWriter()).Level(zerolog.InfoLevel).With().Caller().Logger()
 		logger = &l
 	}
 	log.Logger = *logger
