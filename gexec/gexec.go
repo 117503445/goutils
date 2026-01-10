@@ -47,17 +47,26 @@ func durationToStr(d time.Duration) string {
 // where attackers can execute arbitrary system commands through specially crafted inputs.
 // To enhance security, ensure all inputs are rigorously validated and consider using safer methods to pass arguments to the exec.Command function.
 func Command(cmd string) *exec.Cmd {
+	if cmd == "" {
+		log.Panic().Msg("Command is empty")
+	}
 	return Commands(strings.Split(cmd, " "))
 }
 
 // Commands creates a new exec.Cmd instance using the provided command and its arguments list.
 // Important: Ensure all inputs have been properly validated and sanitized to avoid any security issues arising from improper parameter handling.
 func Commands(cmds []string) *exec.Cmd {
+	if len(cmds) == 0 {
+		log.Panic().Msg("Commands is empty")
+	}
 	cmd := exec.Command(cmds[0], cmds[1:]...)
 	return cmd
 }
 
 func Cmds(cmds ...string) *exec.Cmd {
+	if len(cmds) == 0 {
+		log.Panic().Msg("Cmds is empty")
+	}
 	return Commands(cmds)
 }
 
