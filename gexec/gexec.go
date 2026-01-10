@@ -57,6 +57,10 @@ func Commands(cmds []string) *exec.Cmd {
 	return cmd
 }
 
+func Cmds(cmds ...string) *exec.Cmd {
+	return Commands(cmds)
+}
+
 func SetEnvs(envs map[string]string, cmd *exec.Cmd) *exec.Cmd {
 	for k, v := range envs {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
