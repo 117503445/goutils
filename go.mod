@@ -8,6 +8,7 @@ require (
 	github.com/alibabacloud-go/ecs-20140526/v7 v7.4.2
 	github.com/alibabacloud-go/fc-20230330/v4 v4.6.6
 	github.com/alibabacloud-go/tea v1.3.13
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.3.0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.114
 	github.com/goccy/go-yaml v1.19.1
 	github.com/google/uuid v1.6.0
@@ -54,6 +55,7 @@ require (
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
