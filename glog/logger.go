@@ -22,38 +22,43 @@ func NewConsoleWriter(config ...ConsoleWriterConfig) zerolog.ConsoleWriter {
 		cfg = config[0]
 	}
 
-	if cfg.RequestId == "" {
-		return zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: cfg.NoColor}
-	} else {
-		return zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: cfg.NoColor, FormatCaller: func(i any) string {
-			var c string
-			if cc, ok := i.(string); ok {
-				c = cc
+	return zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000", NoColor: cfg.NoColor, FormatCaller: func(i any) string {
+		var c string
+		if cc, ok := i.(string); ok {
+			c = cc
+		}
+		d := cfg.DirBuild
+		if d == "unknown" {
+			d = ""
+		}
+		if d == "" {
+			if cwd, err := os.Getwd(); err == nil {
+				d = cwd
 			}
-			d := cfg.DirBuild
-			if d == "unknown" {
-				d = ""
-			}
-			if d == "" {
-				if cwd, err := os.Getwd(); err == nil {
-					d = cwd
-				}
-			}
+		}
 
-			if d != "" {
-				if rel, err := filepath.Rel(d, c); err == nil {
-					c = rel
-				}
+		if d != "" {
+			if rel, err := filepath.Rel(d, c); err == nil {
+				c = rel
 			}
+		}
 
+		if len(cfg.RequestId) > 0 {
 			if len(c) > 0 {
 				c = fmt.Sprintf("[%v] %v >", cfg.RequestId, c)
 			} else {
 				c = fmt.Sprintf("[%v] >", cfg.RequestId)
 			}
-			return c
-		},
+		} else {
+			if len(c) > 0 {
+				c = fmt.Sprintf("%v >", c)
+			} else {
+				c = ">"
+			}
 		}
+
+		return c
+	},
 	}
 }
 
